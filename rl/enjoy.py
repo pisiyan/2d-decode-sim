@@ -2,11 +2,12 @@ import time
 import os
 import sys
 
-# Parse command line argument --name before any other imports to configure dynamic paths
+# Parse command line arguments --name and --stage before any other imports to configure dynamic paths
 for i, arg in enumerate(sys.argv):
     if arg in ("--name", "-n") and i + 1 < len(sys.argv):
         os.environ["DECODE_AGENT_NAME"] = sys.argv[i + 1]
-        break
+    if arg in ("--stage", "-s") and i + 1 < len(sys.argv):
+        os.environ["DECODE_STAGE"] = sys.argv[i + 1]
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,39 +15,40 @@ import matplotlib.transforms as mtransforms
 from matplotlib.patches import Rectangle, Circle, Polygon
 from stable_baselines3 import PPO
 from rl.env import FTCDecodeEnv
-from rl.config import TRAINING_PARAMS
+from rl.config import TRAINING_PARAMS, STAGE
 
 # Configurable playback speed multiplier (e.g. 1.0 for real-time, 2.0 for double speed, 4.0 for fast-forward)
 PLAYBACK_SPEED = 20.0
 
 def enjoy():
-    print("Searching for the latest model or checkpoint...")
+    print(f"Searching for Stage {STAGE} model or checkpoints...")
     model_path = TRAINING_PARAMS["model_save_path"]
     model_dir = os.path.dirname(model_path)
     agent_name = os.environ.get("DECODE_AGENT_NAME")
-    checkpoint_prefix = f"ppo_decode_checkpoint_{agent_name}" if agent_name else "ppo_decode_checkpoint"
+    stage_suffix = f"stage{STAGE}"
+    checkpoint_prefix = f"ppo_decode_checkpoint_{agent_name}_{stage_suffix}" if agent_name else f"ppo_decode_checkpoint_{stage_suffix}"
 
     import zipfile
 
     candidates = []
     
-    # 1. Check final model
+    # 1. Check final model for active stage
     final_zip = model_path + ".zip"
     if os.path.exists(final_zip) and zipfile.is_zipfile(final_zip):
-        candidates.append((final_zip, os.path.getmtime(final_zip), "final model"))
+        candidates.append((final_zip, os.path.getmtime(final_zip), f"final Stage {STAGE} model"))
         
-    # 2. Check intermediate checkpoints
+    # 2. Check intermediate checkpoints for active stage
     if os.path.exists(model_dir):
         checkpoints = [
             os.path.join(model_dir, f) for f in os.listdir(model_dir)
             if f.startswith(checkpoint_prefix) and f.endswith(".zip") and zipfile.is_zipfile(os.path.join(model_dir, f))
         ]
         for cp in checkpoints:
-            candidates.append((cp, os.path.getmtime(cp), "checkpoint"))
+            candidates.append((cp, os.path.getmtime(cp), f"Stage {STAGE} checkpoint"))
             
     if not candidates:
-        print(f"No trained model or checkpoints found for agent '{agent_name or 'default'}' in {model_dir}")
-        print("Please train a model first using: python -m rl.train")
+        print(f"No trained model or checkpoints found for Stage {STAGE} (agent '{agent_name or 'default'}') in {model_dir}")
+        print(f"Please train a Stage {STAGE} model first using: python -m rl.train --stage {STAGE}")
         return
 
     # Sort by modification time descending (newest first)
