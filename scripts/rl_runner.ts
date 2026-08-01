@@ -41,6 +41,21 @@ async function main() {
 
   let stage = 2;
 
+function getStage1SpawnPos(robotPos?: { x: number; y: number }): { x: number; y: number } {
+  let x = 0, y = 0;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    x = (Math.random() * 2 - 1) * 50;
+    y = (Math.random() * 2 - 1) * 50;
+    if (robotPos) {
+      const d = Math.hypot(x - robotPos.x, y - robotPos.y);
+      if (d > 20) break;
+    } else {
+      break;
+    }
+  }
+  return { x, y };
+}
+
   rl.on('line', (line) => {
     try {
       const msg = JSON.parse(line);
@@ -66,13 +81,11 @@ async function main() {
 
         // STAGE 1 INITIALIZATION: Clear hoppers and relocate any preloaded/held balls to random ground positions
         if (stage === 1) {
+          const mainRobot = world.robots[0];
           for (const b of world.balls) {
             if (b.state.kind === 'held') {
               b.state = { kind: 'ground' };
-              b.pos = {
-                x: (Math.random() * 2 - 1) * 55,
-                y: (Math.random() * 2 - 1) * 55,
-              };
+              b.pos = getStage1SpawnPos(mainRobot?.pos);
               b.vel = { x: 0, y: 0 };
               b.z = 0;
               b.vz = 0;
@@ -138,13 +151,11 @@ async function main() {
 
         // STAGE 1 LOGIC: As soon as a ball is intaked, relocate it to a random ground position and clear hopper
         if (stage === 1) {
+          const mainRobot = world.robots[0];
           for (const b of world.balls) {
             if (b.state.kind === 'held') {
               b.state = { kind: 'ground' };
-              b.pos = {
-                x: (Math.random() * 2 - 1) * 55,
-                y: (Math.random() * 2 - 1) * 55,
-              };
+              b.pos = getStage1SpawnPos(mainRobot?.pos);
               b.vel = { x: 0, y: 0 };
               b.z = 0;
               b.vz = 0;
