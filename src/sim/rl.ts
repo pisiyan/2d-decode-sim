@@ -154,26 +154,35 @@ export function getObservationVector(world: World, robotId: number): number[] {
   ).length;
   obs.push(oppClassifierCount / 9.0);
 
-  // 6. Fixed-Slot Field Balls (15 slots * 3 = 45 dimensions)
-  // Each ball occupies a permanent, fixed slot in the observation vector based on its unique ID.
-  // This eliminates channel-swapping thrashing and prevents policy oscillation.
-  const maxSlots = 15;
-  const fixedBalls = [...world.balls].sort((a, b) => a.id - b.id);
+  // 6. Closest 15 Ground Balls with Angle-Distance Stabilized Priority (15 slots * 3 = 45 dimensions)
+  // Filters ONLY active ground balls so relocated/respawned balls (any ID) are visible.
+  // Uses heading-weighted scoring to keep the targeted ball stably locked in slot 0 without oscillation.
+  const groundBalls = world.balls.filter((b) => b.state.kind === 'ground');
+  const sortedGround = groundBalls.sort((a, b) => {
+    const da = dist(a.pos, r.pos);
+    const db = dist(b.pos, r.pos);
+    
+    // Relative angle offset to robot heading
+    const angleA = Math.atan2(a.pos.y - r.pos.y, a.pos.x - r.pos.x) - r.heading;
+    const angleB = Math.atan2(b.pos.y - r.pos.y, b.pos.x - r.pos.x) - r.heading;
+    
+    const normAngleA = Math.abs(Math.atan2(Math.sin(angleA), Math.cos(angleA)));
+    const normAngleB = Math.abs(Math.atan2(Math.sin(angleB), Math.cos(angleB)));
 
-  for (let i = 0; i < maxSlots; i++) {
-    if (i < fixedBalls.length) {
-      const b = fixedBalls[i];
-      if (b.state.kind === 'ground') {
-        const localBall = rot({ x: b.pos.x - r.pos.x, y: b.pos.y - r.pos.y }, -r.heading);
-        obs.push(localBall.x / (C.FIELD_HALF * 2));
-        obs.push(localBall.y / (C.FIELD_HALF * 2));
-        obs.push(b.color === 'green' ? 1.0 : -1.0);
-      } else {
-        // Non-ground ball (held or scored): state 0.0 position and status
-        obs.push(0.0);
-        obs.push(0.0);
-        obs.push(0.0);
-      }
+    // Combined priority score: favors closer balls that the robot is currently facing
+    const scoreA = da + normAngleA * 20.0;
+    const scoreB = db + normAngleB * 20.0;
+
+    return scoreA - scoreB;
+  });
+
+  for (let i = 0; i < 15; i++) {
+    if (i < sortedGround.length) {
+      const b = sortedGround[i];
+      const localBall = rot({ x: b.pos.x - r.pos.x, y: b.pos.y - r.pos.y }, -r.heading);
+      obs.push(localBall.x / (C.FIELD_HALF * 2));
+      obs.push(localBall.y / (C.FIELD_HALF * 2));
+      obs.push(b.color === 'green' ? 1.0 : -1.0);
     } else {
       obs.push(0.0);
       obs.push(0.0);
