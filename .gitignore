@@ -11,5 +11,6 @@ release/
 __pycache__/
 *.pyc
 rl/tb_logs/
+rl/models/
 rl/venv/
 venv/

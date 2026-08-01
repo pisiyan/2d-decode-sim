@@ -16,7 +16,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import BaseCallback, CheckpointCallback, EvalCallback
 from rl.env import FTCDecodeEnv
-from rl.config import TRAINING_PARAMS
+from rl.config import TRAINING_PARAMS, STAGE
 
 # PyTorch wrapper to export a deterministic policy network to ONNX format
 class ONNXPolicyWrapper(torch.nn.Module):
@@ -72,16 +72,17 @@ def train():
     model = None
     
     agent_name = os.environ.get("DECODE_AGENT_NAME")
-    checkpoint_prefix = f"ppo_decode_checkpoint_{agent_name}" if agent_name else "ppo_decode_checkpoint"
+    stage_suffix = f"stage{STAGE}"
+    checkpoint_prefix = f"ppo_decode_checkpoint_{agent_name}_{stage_suffix}" if agent_name else f"ppo_decode_checkpoint_{stage_suffix}"
 
     import zipfile
 
-    # Check if a final saved model zip exists to resume from
+    # 1. Check if a saved model zip for THIS stage exists to resume from
     final_model_zip = model_path + ".zip"
     if os.path.exists(final_model_zip) and zipfile.is_zipfile(final_model_zip):
-        print(f"Found existing model at {model_path}.zip. Loading weights and resuming training...")
+        print(f"Found existing Stage {STAGE} model at {model_path}.zip. Loading weights and resuming training...")
         model = PPO.load(model_path, env=env)
-    # Otherwise, check if there are intermediate checkpoints
+    # 2. Check if intermediate checkpoints for THIS stage exist
     elif os.path.exists(model_dir):
         checkpoints = [
             os.path.join(model_dir, f) for f in os.listdir(model_dir)
@@ -90,12 +91,35 @@ def train():
         if checkpoints:
             import re
             def get_step_num(filepath):
-                # Search for the step number suffix (e.g. _100000_steps)
                 match = re.search(r'_(\d+)_steps', filepath)
                 return int(match.group(1)) if match else 0
             latest_checkpoint = max(checkpoints, key=get_step_num)
-            print(f"Found latest checkpoint: {latest_checkpoint}. Loading weights and resuming training...")
+            print(f"Found latest Stage {STAGE} checkpoint: {latest_checkpoint}. Loading weights and resuming training...")
             model = PPO.load(latest_checkpoint, env=env)
+
+    # 3. CURRICULUM TRANSFER: If starting a higher stage for the first time, check for previous stage model/checkpoints
+    if model is None and STAGE > 1:
+        prev_stage = STAGE - 1
+        prev_stage_suffix = f"stage{prev_stage}"
+        prev_model_path = os.path.join(model_dir, f"ppo_decode_model_{agent_name}_{prev_stage_suffix}.zip") if agent_name else os.path.join(model_dir, f"ppo_decode_model_{prev_stage_suffix}.zip")
+        prev_checkpoint_prefix = f"ppo_decode_checkpoint_{agent_name}_{prev_stage_suffix}" if agent_name else f"ppo_decode_checkpoint_{prev_stage_suffix}"
+        
+        if os.path.exists(prev_model_path) and zipfile.is_zipfile(prev_model_path):
+            print(f"--- CURRICULUM TRANSFER: Initializing Stage {STAGE} from trained Stage {prev_stage} model ({prev_model_path}) ---")
+            model = PPO.load(prev_model_path, env=env)
+        elif os.path.exists(model_dir):
+            prev_checkpoints = [
+                os.path.join(model_dir, f) for f in os.listdir(model_dir)
+                if f.startswith(prev_checkpoint_prefix) and f.endswith(".zip") and zipfile.is_zipfile(os.path.join(model_dir, f))
+            ]
+            if prev_checkpoints:
+                import re
+                def get_step_num(filepath):
+                    match = re.search(r'_(\d+)_steps', filepath)
+                    return int(match.group(1)) if match else 0
+                latest_prev_checkpoint = max(prev_checkpoints, key=get_step_num)
+                print(f"--- CURRICULUM TRANSFER: Initializing Stage {STAGE} from latest Stage {prev_stage} checkpoint ({latest_prev_checkpoint}) ---")
+                model = PPO.load(latest_prev_checkpoint, env=env)
 
     # If we loaded an existing model, hot-patch updated hyperparameters from config.
     # SB3 bakes hyperparams in at creation time, so without this, config.py changes
