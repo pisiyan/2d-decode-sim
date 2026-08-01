@@ -154,22 +154,26 @@ export function getObservationVector(world: World, robotId: number): number[] {
   ).length;
   obs.push(oppClassifierCount / 9.0);
 
-  // 6. Closest 15 ground balls (15 * 3 = 45 dimensions)
-  const groundBalls = world.balls.filter((b) => b.state.kind === 'ground');
-  // Sort by Euclidean distance to robot to keep closer balls first
-  const sorted = groundBalls.sort((a, b) => {
-    const da = dist(a.pos, r.pos);
-    const db = dist(b.pos, r.pos);
-    return da - db;
-  });
+  // 6. Fixed-Slot Field Balls (15 slots * 3 = 45 dimensions)
+  // Each ball occupies a permanent, fixed slot in the observation vector based on its unique ID.
+  // This eliminates channel-swapping thrashing and prevents policy oscillation.
+  const maxSlots = 15;
+  const fixedBalls = [...world.balls].sort((a, b) => a.id - b.id);
 
-  for (let i = 0; i < 15; i++) {
-    if (i < sorted.length) {
-      const b = sorted[i];
-      const localBall = rot({ x: b.pos.x - r.pos.x, y: b.pos.y - r.pos.y }, -r.heading);
-      obs.push(localBall.x / (C.FIELD_HALF * 2));
-      obs.push(localBall.y / (C.FIELD_HALF * 2));
-      obs.push(b.color === 'green' ? 1.0 : -1.0);
+  for (let i = 0; i < maxSlots; i++) {
+    if (i < fixedBalls.length) {
+      const b = fixedBalls[i];
+      if (b.state.kind === 'ground') {
+        const localBall = rot({ x: b.pos.x - r.pos.x, y: b.pos.y - r.pos.y }, -r.heading);
+        obs.push(localBall.x / (C.FIELD_HALF * 2));
+        obs.push(localBall.y / (C.FIELD_HALF * 2));
+        obs.push(b.color === 'green' ? 1.0 : -1.0);
+      } else {
+        // Non-ground ball (held or scored): state 0.0 position and status
+        obs.push(0.0);
+        obs.push(0.0);
+        obs.push(0.0);
+      }
     } else {
       obs.push(0.0);
       obs.push(0.0);

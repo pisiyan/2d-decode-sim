@@ -1,5 +1,5 @@
 {
-    "STAGE": 1,
+    "STAGE": 2,
     "ROBOT_SPEC": {
         "name": "bros moving like lebron",
         "teamName": "bombaclaat",
@@ -56,17 +56,17 @@
         "motifMatchWeight": 0.0,
         "foulWeight": 2.0,
         "timePenalty": 0.005,
-        "ballApproachWeight": 0.5,
-        "shootZoneApproachWeight": 2.0,
-        "intakeAlignmentWeight": 0.4,
-        "intakeAlignmentAbsWeight": 0.3,
+        "ballApproachWeight": 0.0,
+        "shootZoneApproachWeight": 0.0,
+        "intakeAlignmentWeight": 0.0,
+        "intakeAlignmentAbsWeight": 0.0,
         "earlyGatePenalty": 0.0,
         "fullGateBonus": 0.0,
         "scoreCloseWeight": 10.0,
         "scoreFarWeight": 0.0,
         "overflowPenalty": 5.0,
         "gateApproachPenalty": 0.0,
-        "autoOppositeSidePenalty": 1000.0
+        "autoOppositeSidePenalty": 10.0
     },
     "STAGE_2_TRAINING_PARAMS": {
         "total_timesteps": 10000000,
