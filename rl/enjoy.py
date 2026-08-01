@@ -173,15 +173,17 @@ def enjoy():
             green_coords = []
             
             # Ground ball offsets start at index 32
-            # 15 closest balls * 3 features (dx, dy, color) = 45 dims [32:77]
-            for i in range(15):
+            # 30 permanent fixed ball slots * 3 features (dx, dy, color) = 90 dims [32:122]
+            for i in range(30):
                 idx = 32 + i * 3
+                if idx + 2 >= len(obs):
+                    break
                 dx = obs[idx] * 144.0
                 dy = obs[idx+1] * 144.0
                 color_type = obs[idx+2]
                 
-                # Check if ball slot is populated (non-zero coordinate or valid color)
-                if abs(dx) > 1e-5 or abs(dy) > 1e-5:
+                # Check if ball slot is active ground ball (non-zero coordinate or valid color)
+                if abs(dx) > 1e-5 or abs(dy) > 1e-5 or abs(color_type) > 1e-5:
                     # Convert local coordinate relative to heading back to global field frame
                     # rot CCW back by heading
                     c = np.cos(heading)

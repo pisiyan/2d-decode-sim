@@ -202,8 +202,8 @@ def export_to_onnx(model, export_path):
         policy_wrapper = ONNXPolicyWrapper(model.policy)
         policy_wrapper.eval()
 
-        # Dummy input corresponding to observation space (1 batch, 77 dimensions)
-        dummy_input = torch.randn(1, 77, dtype=torch.float32)
+        # Dummy input corresponding to observation space (1 batch, 122 dimensions)
+        dummy_input = torch.randn(1, 122, dtype=torch.float32)
 
         os.makedirs(os.path.dirname(export_path), exist_ok=True)
         

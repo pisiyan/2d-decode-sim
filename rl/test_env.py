@@ -11,12 +11,12 @@ def test_environment():
         print("\n--- Testing env.reset() ---")
         obs, info = env.reset(seed=42)
         print("Reset successful!")
-        print(f"Observation shape: {obs.shape} (Expected: (77,))")
+        print(f"Observation shape: {obs.shape} (Expected: (122,))")
         print(f"Observation type: {obs.dtype} (Expected: float32)")
         print(f"Initial Info metadata: {info}")
         
         # Validate observation length
-        assert obs.shape == (77,), f"Invalid observation shape {obs.shape}"
+        assert obs.shape == (122,), f"Invalid observation shape {obs.shape}"
         assert not np.isnan(obs).any(), "Observation contains NaN values!"
         assert not np.isinf(obs).any(), "Observation contains Infinite values!"
 
@@ -33,7 +33,7 @@ def test_environment():
             total_reward += reward
 
             # Sanity checks
-            assert obs.shape == (77,), f"Step {step_idx} returned invalid observation shape {obs.shape}"
+            assert obs.shape == (122,), f"Step {step_idx} returned invalid observation shape {obs.shape}"
             assert not np.isnan(obs).any(), f"Step {step_idx} observation contains NaN!"
             assert not np.isnan(reward), f"Step {step_idx} reward is NaN!"
 

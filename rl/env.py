@@ -22,16 +22,16 @@ class FTCDecodeEnv(gym.Env):
         # 2: rotate [-1.0, 1.0] (yaw steering)
         self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 
-        # Flat, pre-normalized numeric observation vector of 77 dimensions:
+        # Flat, pre-normalized numeric observation vector of 122 dimensions:
         # [0:8]   Robot position, heading, velocity, power, cooldown (9)
         # [9:13]  Hopper states (size, slot colors) and flywheel spin (5)
         # [14:22] Match timing, phase (one-hot), and motif colors (9)
         # [23:26] Goals relative positions (own and opponent goals) (4)
         # [27:29] Gate relative position and opening fraction (3)
         # [30:31] Classifier rail counts (own and opponent) (2)
-        # [32:76] Closest 15 ground balls relative positions and colors (15 * 3 = 45)
+        # [32:121] 30 permanent fixed ball slots relative positions and colors (30 * 3 = 90)
         self.observation_space = gym.spaces.Box(
-            low=-10.0, high=10.0, shape=(77,), dtype=np.float32
+            low=-10.0, high=10.0, shape=(122,), dtype=np.float32
         )
 
         # Lazy initialization of the Node process to support multiprocessing serialization (pickling)

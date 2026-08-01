@@ -71,7 +71,7 @@ export function distanceToLaunchZone(p: { x: number; y: number }, alliance: any,
 export function getObservationVector(world: World, robotId: number): number[] {
   const r = world.robots.find((rr) => rr.id === robotId);
   if (!r) {
-    return new Array(77).fill(0);
+    return new Array(122).fill(0);
   }
 
   const obs: number[] = [];
@@ -154,35 +154,26 @@ export function getObservationVector(world: World, robotId: number): number[] {
   ).length;
   obs.push(oppClassifierCount / 9.0);
 
-  // 6. Closest 15 Ground Balls with Angle-Distance Stabilized Priority (15 slots * 3 = 45 dimensions)
-  // Filters ONLY active ground balls so relocated/respawned balls (any ID) are visible.
-  // Uses heading-weighted scoring to keep the targeted ball stably locked in slot 0 without oscillation.
-  const groundBalls = world.balls.filter((b) => b.state.kind === 'ground');
-  const sortedGround = groundBalls.sort((a, b) => {
-    const da = dist(a.pos, r.pos);
-    const db = dist(b.pos, r.pos);
-    
-    // Relative angle offset to robot heading
-    const angleA = Math.atan2(a.pos.y - r.pos.y, a.pos.x - r.pos.x) - r.heading;
-    const angleB = Math.atan2(b.pos.y - r.pos.y, b.pos.x - r.pos.x) - r.heading;
-    
-    const normAngleA = Math.abs(Math.atan2(Math.sin(angleA), Math.cos(angleA)));
-    const normAngleB = Math.abs(Math.atan2(Math.sin(angleB), Math.cos(angleB)));
+  // 6. Permanent Fixed Ball Slots (30 slots * 3 = 90 dimensions, total obs length = 122)
+  // Each ball in world.balls occupies a permanent, unchangeable slot in the observation vector based strictly on its ball.id.
+  // A ball NEVER changes slot at all, completely eliminating target thrashing and channel switching.
+  const maxSlots = 30;
+  const fixedBalls = [...world.balls].sort((a, b) => a.id - b.id);
 
-    // Combined priority score: favors closer balls that the robot is currently facing
-    const scoreA = da + normAngleA * 20.0;
-    const scoreB = db + normAngleB * 20.0;
-
-    return scoreA - scoreB;
-  });
-
-  for (let i = 0; i < 15; i++) {
-    if (i < sortedGround.length) {
-      const b = sortedGround[i];
-      const localBall = rot({ x: b.pos.x - r.pos.x, y: b.pos.y - r.pos.y }, -r.heading);
-      obs.push(localBall.x / (C.FIELD_HALF * 2));
-      obs.push(localBall.y / (C.FIELD_HALF * 2));
-      obs.push(b.color === 'green' ? 1.0 : -1.0);
+  for (let i = 0; i < maxSlots; i++) {
+    if (i < fixedBalls.length) {
+      const b = fixedBalls[i];
+      if (b.state.kind === 'ground') {
+        const localBall = rot({ x: b.pos.x - r.pos.x, y: b.pos.y - r.pos.y }, -r.heading);
+        obs.push(localBall.x / (C.FIELD_HALF * 2));
+        obs.push(localBall.y / (C.FIELD_HALF * 2));
+        obs.push(b.color === 'green' ? 1.0 : -1.0);
+      } else {
+        // Non-ground ball (held or scored): state 0.0 position and status
+        obs.push(0.0);
+        obs.push(0.0);
+        obs.push(0.0);
+      }
     } else {
       obs.push(0.0);
       obs.push(0.0);
