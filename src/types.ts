@@ -85,6 +85,7 @@ export interface Artifact {
   vel: Vec2;
   z: number;
   vz: number;
+  shotFromFarZone?: boolean; // True if shot from the far (audience) launch zone
 }
 
 export interface RobotState {

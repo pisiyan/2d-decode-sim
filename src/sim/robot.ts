@@ -364,6 +364,8 @@ function fire(world: World, r: RobotState): void {
     x: dcos(yaw) * speed * cos + r.vel.x * C.SHOT_ROBOT_VEL_INHERIT,
     y: dsin(yaw) * speed * cos + r.vel.y * C.SHOT_ROBOT_VEL_INHERIT,
   };
+  const shotFromFarZone = tp.y < 0;
+
   if (fireBall) {
     // reuse the held ball as the shot (physical ball leaves the intake)
     fireBall.state = { kind: 'flight', target: r.alliance };
@@ -371,6 +373,7 @@ function fire(world: World, r: RobotState): void {
     fireBall.vel = vel;
     fireBall.z = C.LAUNCH_HEIGHT;
     fireBall.vz = speed * dsin(angle);
+    fireBall.shotFromFarZone = shotFromFarZone;
   } else {
     // fallback: no physical held ball (shouldn't happen once preloads are held)
     world.balls.push({
@@ -381,6 +384,7 @@ function fire(world: World, r: RobotState): void {
       vel,
       z: C.LAUNCH_HEIGHT,
       vz: speed * dsin(angle),
+      shotFromFarZone: shotFromFarZone,
     });
   }
   // re-slot the remaining held balls so slot stays == hopper index

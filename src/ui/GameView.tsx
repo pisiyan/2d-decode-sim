@@ -178,6 +178,7 @@ export function GameView({ settings, onExit, session = null, onWatchReplay, sign
     const canvas = canvasRef.current!;
     const controller = new GameController(canvas, settings, session);
     controllerRef.current = controller;
+    (window as any).activeController = controller;
     setIntro(controller.getIntro()); // ranked matches only; null otherwise
     const hudTimer = window.setInterval(() => setHud(controller.getHud()), 100);
     const onKey = (e: KeyboardEvent) => {
@@ -195,6 +196,7 @@ export function GameView({ settings, onExit, session = null, onWatchReplay, sign
       if (h && (h.phase === 'post' || h.net?.failed)) clearActiveGame();
     }, 250);
     return () => {
+      (window as any).activeController = null;
       window.clearInterval(hudTimer);
       window.clearInterval(clearTimer);
       window.removeEventListener('keydown', onKey);

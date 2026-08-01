@@ -854,6 +854,10 @@ export class GameController {
     };
   }
 
+  getWorld(): World {
+    return this.world;
+  }
+
   dispose(): void {
     this.disposed = true;
     this.audio.stopSpeech();

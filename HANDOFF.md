@@ -1,8 +1,14 @@
-# HANDOFF — 2026-07-11 (swerve min width 13.5 · vector intake = chassis width · ranked drivetrain split dropped · no server auto · duo shows both drivetrains) — READ FIRST
+# HANDOFF — 2026-07-15 (RL Reward Tuning: shoot zone approach squared scaling & gate approach penalty) — READ FIRST
 
-> **GREEN — `npm run build`, `npm test` (ALL PASS), `npm run server:check` all pass.** (No palette edits → didn't re-run `contrast`.)
+> **GREEN — `npm run build`, `npm test` (ALL PASS) pass.**
 
-## Latest — balance: swerve accel/weight + per-intake minimum widths
+## Latest — RL Reward Tuning
+- **Shoot Zone Approach Scaling**: Modified [rl.ts](file:///c:/Users/burak/IdeaProjects/2d-decode-sim/src/sim/rl.ts) to scale the shoot zone approach reward by `fillRatio * fillRatio` (squared) instead of linear. This penalizes/down-weights approaching the launch zone with 1 or 2 balls, encouraging the policy to accumulate a full hopper (3 balls) before approaching.
+- **Gate Approach Penalty**: Introduced a proximity-based absolute per-step penalty for being close to the gate when the own classifier has `< 9` balls. The penalty scales linearly from `gateApproachPenalty` at distance=0 down to `0` at distance >= 48 inches. Defaulted `gateApproachPenalty` parameter to `0.0` across all configurations ([rl.ts](file:///c:/Users/burak/IdeaProjects/2d-decode-sim/src/sim/rl.ts), [rl_runner.ts](file:///c:/Users/burak/IdeaProjects/2d-decode-sim/scripts/rl_runner.ts), [config.py](file:///c:/Users/burak/IdeaProjects/2d-decode-sim/rl/config.py), and the 5 `.json` configs under [rl/configs/](file:///c:/Users/burak/IdeaProjects/2d-decode-sim/rl/configs/)).
+- **Auto Opposite Side Penalty**: Added `autoOppositeSidePenalty` parameter to penalize crossing the centerline during the autonomous phase. It is defaulted to `0.0` in Python and the TS runner but configured with a very large penalty of `1000.0` across all 5 JSON profiles.
+- **Verification**: Created a scratch unit test at [test_rewards.ts](file:///C:/Users/burak/.gemini/antigravity/brain/04552a95-31c4-413e-b411-85ff0b2cac16/scratch/test_rewards.ts) verifying correct mathematical scaling of both components under different states. Run with `npx tsx C:\Users\burak\.gemini\antigravity\brain\04552a95-31c4-413e-b411-85ff0b2cac16\scratch\test_rewards.ts`. All pre-existing smoke tests and build checks are clean.
+
+## Prev — balance: swerve accel/weight + per-intake minimum widths
 
 - **Swerve** (`config.ts`): `accelMult` 1.30 → **1.32**, base min weight (`DRIVETRAIN_LIMITS.swerve.minMass`) → **21.5** lb. Tuned so a min-weight / max-inertia / 500rpm swerve just OUT-accels the equivalent mecanum (~1.7%); at equal weight swerve is clearly ahead (1.32 vs mecanum 1.12). Smoke pins the corner comparison. (Peak accel ~317 in/s².)
 - **Per-intake MIN WIDTH** (`INTAKE_PRESETS[*].minWidth`, applied in `drivetrain.ts` `widthLimits`): sloped **14.5"**, triangle **15.5"**, vector **10"** (`ROBOT_MIN_WIDTH`). The width floor is now `max(drivetrain floor, intake floor)` — so swerve+triangle = 15.5, mecanum+vector = 10. All 5 `ROBOT_PRESETS` + `DEFAULT_SPEC` already clear the new floors.

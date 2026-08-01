@@ -7,3 +7,9 @@ release/
 .env.*
 !.env.example
 .DS_Store
+.idea/
+__pycache__/
+*.pyc
+rl/tb_logs/
+rl/venv/
+venv/
