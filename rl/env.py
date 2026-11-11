@@ -285,8 +285,17 @@ class FTCDecodeEnv(gym.Env):
                 model = self._get_ppo_model(model_name, is_current_training=is_training)
                 if model is not None:
                     try:
+                        expected_dim = model.observation_space.shape[0]
+                        if len(obs) != expected_dim:
+                            if len(obs) > expected_dim:
+                                model_obs = obs[:expected_dim]
+                            else:
+                                model_obs = np.pad(obs, (0, expected_dim - len(obs)), mode='constant')
+                        else:
+                            model_obs = obs
+                            
                         # Predict next action using the model
-                        opp_action, _ = model.predict(obs, deterministic=not is_training)
+                        opp_action, _ = model.predict(model_obs, deterministic=not is_training)
                         actions_dict[str(rid)] = opp_action.tolist()
                     except Exception as e:
                         # Fallback to zero action

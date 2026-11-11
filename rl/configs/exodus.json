@@ -1,0 +1,90 @@
+{
+  "STAGE": 2,
+  "ROBOT_SPEC": {
+    "name": "exodus",
+    "teamName": "gooners",
+    "teamNumber": 6767,
+    "length": 13.0,
+    "width": 18.0,
+    "intake": "triangle",
+    "massLb": 22.0,
+    "drivetrain": "mecanum",
+    "driveRpm": 600,
+    "flywheelInertia": 1.0,
+    "canSort": false
+  },
+  "START_INDEX": 1,
+  "partner": {
+    "model": "quantum",
+    "training": true
+  },
+  "opponents": [],
+  "STAGE_1_REWARD_CONFIG": {
+    "scoreWeight": 0.0,
+    "intakeWeight": 10.0,
+    "motifMatchWeight": 0.0,
+    "foulWeight": 2.0,
+    "timePenalty": 0.001,
+    "ballApproachWeight": 1.0,
+    "shootZoneApproachWeight": 0.0,
+    "intakeAlignmentWeight": 0.5,
+    "intakeAlignmentAbsWeight": 0.5,
+    "earlyGatePenalty": 0.0,
+    "fullGateBonus": 0.0,
+    "scoreCloseWeight": 0.0,
+    "scoreFarWeight": 0.0,
+    "overflowPenalty": 0.0,
+    "gateApproachPenalty": 0.0,
+    "autoOppositeSidePenalty": 0.0
+  },
+  "STAGE_1_TRAINING_PARAMS": {
+    "total_timesteps": 5000000,
+    "learning_rate": 0.0003,
+    "n_steps": 1024,
+    "batch_size": 256,
+    "n_epochs": 10,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "ent_coef": 0.01,
+    "log_std_init": 0.8,
+    "num_envs": 12,
+    "net_arch": {
+      "pi": [256, 128],
+      "vf": [256, 128]
+    }
+  },
+  "STAGE_2_REWARD_CONFIG": {
+    "scoreWeight": 0.0,
+    "intakeWeight": 10.0,
+    "motifMatchWeight": 0.0,
+    "foulWeight": 5.0,
+    "timePenalty": 0.005,
+    "ballApproachWeight": 0.0,
+    "shootZoneApproachWeight": 0.0,
+    "intakeAlignmentWeight": 0.0,
+    "intakeAlignmentAbsWeight": 0.0,
+    "earlyGatePenalty": 0.0,
+    "fullGateBonus": 0.0,
+    "scoreCloseWeight": 0.0,
+    "scoreFarWeight": 10.0,
+    "overflowPenalty": 0.0,
+    "gateApproachPenalty": 0.0,
+    "autoOppositeSidePenalty": 1.0
+  },
+  "STAGE_2_TRAINING_PARAMS": {
+    "total_timesteps": 10000000,
+    "learning_rate": 0.0002,
+    "n_steps": 1024,
+    "batch_size": 256,
+    "n_epochs": 10,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "ent_coef": 0.01,
+    "log_std_init": 0.8,
+    "num_envs": 12,
+    "net_arch": {
+      "pi": [256, 128],
+      "vf": [256, 128]
+    }
+  }
+}

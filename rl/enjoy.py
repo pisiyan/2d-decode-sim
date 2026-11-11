@@ -46,6 +46,21 @@ def enjoy():
         for cp in checkpoints:
             candidates.append((cp, os.path.getmtime(cp), f"Stage {STAGE} checkpoint"))
             
+    # 3. Fallback: If Stage 2 or no candidates found yet, search for legacy models without stage suffix
+    if not candidates or STAGE == 2:
+        fallback_model_path = os.path.join(model_dir, f"ppo_decode_model_{agent_name}.zip") if agent_name else os.path.join(model_dir, "ppo_decode_model.zip")
+        if os.path.exists(fallback_model_path) and zipfile.is_zipfile(fallback_model_path) and fallback_model_path != final_zip:
+            candidates.append((fallback_model_path, os.path.getmtime(fallback_model_path), f"legacy Stage 2 model ({os.path.basename(fallback_model_path)})"))
+            
+        fallback_cp_prefix = f"ppo_decode_checkpoint_{agent_name}_" if agent_name else "ppo_decode_checkpoint_"
+        if os.path.exists(model_dir):
+            fallback_cps = [
+                os.path.join(model_dir, f) for f in os.listdir(model_dir)
+                if f.startswith(fallback_cp_prefix) and "_stage" not in f and f.endswith(".zip") and zipfile.is_zipfile(os.path.join(model_dir, f))
+            ]
+            for cp in fallback_cps:
+                candidates.append((cp, os.path.getmtime(cp), f"legacy Stage 2 checkpoint ({os.path.basename(cp)})"))
+
     if not candidates:
         print(f"No trained model or checkpoints found for Stage {STAGE} (agent '{agent_name or 'default'}') in {model_dir}")
         print(f"Please train a Stage {STAGE} model first using: python -m rl.train --stage {STAGE}")
@@ -113,8 +128,17 @@ def enjoy():
     try:
         while plt.fignum_exists(fig.number):
             step_start = time.time()
-            # Predict actions using trained PPO MLP
-            action, _ = model.predict(obs, deterministic=deterministic)
+            # Predict actions using trained PPO MLP (adapting obs dimension for legacy 77-dim vs 122-dim models)
+            expected_dim = model.observation_space.shape[0]
+            if len(obs) != expected_dim:
+                if len(obs) > expected_dim:
+                    model_obs = obs[:expected_dim]
+                else:
+                    model_obs = np.pad(obs, (0, expected_dim - len(obs)), mode='constant')
+            else:
+                model_obs = obs
+                
+            action, _ = model.predict(model_obs, deterministic=deterministic)
             
             # Step the simulation
             obs, reward, terminated, truncated, info = env.step(action)
